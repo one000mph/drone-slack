@@ -3,9 +3,14 @@ package main
 import (
 	"fmt"
 	"strings"
+  "context"
+  "strconv"
+  "encoding/json"
 
 	"github.com/bluele/slack"
 	"github.com/drone/drone-template-lib/template"
+  "github.com/google/go-github/github"
+  "golang.org/x/oauth2"
 )
 
 type (
@@ -15,20 +20,21 @@ type (
 	}
 
 	Build struct {
-		Tag      string
-		Event    string
-		Number   int
-		Commit   string
-		Ref      string
-		Branch   string
-		Author   string
-		Pull     string
-		Message  string
-		DeployTo string
-		Status   string
-		Link     string
-		Started  int64
-		Created  int64
+		Tag        string
+		Event      string
+		Number     int
+		Commit     string
+		CommitLink string
+		Ref        string
+		Branch     string
+		Author     string
+		Pull       string
+		Message    string
+		DeployTo   string
+		Status     string
+		Link       string
+		Started    int64
+		Created    int64
 	}
 
 	Config struct {
@@ -41,6 +47,7 @@ type (
 		IconURL   string
 		IconEmoji string
 		LinkNames bool
+    GhToken   string
 	}
 
 	Job struct {
@@ -53,6 +60,10 @@ type (
 		Config Config
 		Job    Job
 	}
+
+  DeploymentPayload struct {
+    Person *string `json:"person,omitempty"`
+  }
 )
 
 func (p Plugin) Exec() error {
@@ -70,11 +81,21 @@ func (p Plugin) Exec() error {
 	payload.IconUrl = p.Config.IconURL
 	payload.IconEmoji = p.Config.IconEmoji
 
-	if p.Config.Recipient != "" {
-		payload.Channel = prepend("@", p.Config.Recipient)
-	} else if p.Config.Channel != "" {
-		payload.Channel = prepend("#", p.Config.Channel)
-	}
+  if (p.Build.Event == "deployment") {
+    user := deployUser(p.Config, p.Repo, p.Build)
+    if (user != "") {
+      payload.Channel = prepend("@", user)
+    }
+  }
+
+  if (payload.Channel == "") {
+    if p.Config.Recipient != "" {
+      payload.Channel = prepend("@", p.Config.Recipient)
+    } else if p.Config.Channel != "" {
+      payload.Channel = prepend("#", p.Config.Channel)
+    }
+  }
+
 	if p.Config.LinkNames == true {
 		payload.LinkNames = "1"
 	}
@@ -88,8 +109,8 @@ func (p Plugin) Exec() error {
 		attachment.Text = txt
 	}
 
-	client := slack.NewWebHook(p.Config.Webhook)
-	return client.PostMessage(&payload)
+  client := slack.NewWebHook(p.Config.Webhook)
+  return client.PostMessage(&payload)
 }
 
 func message(repo Repo, build Build) string {
@@ -132,4 +153,29 @@ func prepend(prefix, s string) string {
 	}
 
 	return s
+}
+
+func deployUser(config Config, repo Repo, build Build) string {
+  ctx := context.Background()
+  ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: config.GhToken},
+	)
+  tc := oauth2.NewClient(ctx, ts)
+  client := github.NewClient(tc)
+  parts := strings.Split(build.CommitLink, "/")
+  owner := parts[4]
+  name := parts[5]
+  id, _ := strconv.ParseInt(parts[7], 10, 64)
+  deployment, _, gherr := client.Repositories.GetDeployment(ctx, owner, name, id)
+  if (gherr != nil) {
+    fmt.Println(gherr)
+    return ""
+  }
+  var payload DeploymentPayload
+  jsonerr := json.Unmarshal(deployment.Payload, &payload)
+  if (jsonerr != nil) {
+    fmt.Println(jsonerr)
+    return ""
+  }
+  return *payload.Person
 }

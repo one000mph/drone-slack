@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"log"
+	"os"
 
 	"github.com/urfave/cli"
 )
@@ -24,6 +24,11 @@ func main() {
 			Name:   "webhook",
 			Usage:  "slack webhook url",
 			EnvVar: "SLACK_WEBHOOK,PLUGIN_WEBHOOK",
+		},
+		cli.StringFlag{
+			Name:   "ghtoken",
+			Usage:  "github access token",
+			EnvVar: "GITHUB_ACCESS_TOKEN",
 		},
 		cli.StringFlag{
 			Name:   "channel",
@@ -80,6 +85,11 @@ func main() {
 			Usage:  "git commit sha",
 			EnvVar: "DRONE_COMMIT_SHA",
 			Value:  "00000000",
+		},
+		cli.StringFlag{
+			Name:   "commit.link",
+			Usage:  "git commit link",
+			EnvVar: "DRONE_COMMIT_LINK",
 		},
 		cli.StringFlag{
 			Name:   "commit.ref",
@@ -169,25 +179,27 @@ func run(c *cli.Context) error {
 			Name:  c.String("repo.name"),
 		},
 		Build: Build{
-			Tag:      c.String("build.tag"),
-			Number:   c.Int("build.number"),
-			Event:    c.String("build.event"),
-			Status:   c.String("build.status"),
-			Commit:   c.String("commit.sha"),
-			Ref:      c.String("commit.ref"),
-			Branch:   c.String("commit.branch"),
-			Author:   c.String("commit.author"),
-			Pull:     c.String("commit.pull"),
-			Message:  c.String("commit.message"),
-			DeployTo: c.String("build.deployTo"),
-			Link:     c.String("build.link"),
-			Started:  c.Int64("build.started"),
-			Created:  c.Int64("build.created"),
+			Tag:        c.String("build.tag"),
+			Number:     c.Int("build.number"),
+			Event:      c.String("build.event"),
+			Status:     c.String("build.status"),
+			Commit:     c.String("commit.sha"),
+			CommitLink: c.String("commit.link"),
+			Ref:        c.String("commit.ref"),
+			Branch:     c.String("commit.branch"),
+			Author:     c.String("commit.author"),
+			Pull:       c.String("commit.pull"),
+			Message:    c.String("commit.message"),
+			DeployTo:   c.String("build.deployTo"),
+			Link:       c.String("build.link"),
+			Started:    c.Int64("build.started"),
+			Created:    c.Int64("build.created"),
 		},
 		Job: Job{
 			Started: c.Int64("job.started"),
 		},
 		Config: Config{
+			GhToken:   c.String("ghtoken"),
 			Webhook:   c.String("webhook"),
 			Channel:   c.String("channel"),
 			Recipient: c.String("recipient"),

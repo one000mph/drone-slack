@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"log"
+	"os"
 
 	"github.com/urfave/cli"
 )
 
 var (
-	version = "0.0.0"
-	build   = "0"
+	version = "2.1.0"
+	build   = "1"
 )
 
 func main() {
@@ -25,6 +25,16 @@ func main() {
 			Usage:  "slack webhook url",
 			EnvVar: "SLACK_WEBHOOK,PLUGIN_WEBHOOK",
 		},
+		cli.StringFlag{
+			Name:   "ghtoken",
+			Usage:  "github access token",
+			EnvVar: "GITHUB_ACCESS_TOKEN",
+		},
+    cli.StringFlag{
+      Name:   "ghtoslacks",
+      Usage:  "github_slack_lookup",
+      EnvVar: "GITHUB_SLACK_LOOKUP",
+    },
 		cli.StringFlag{
 			Name:   "channel",
 			Usage:  "slack channel",
@@ -82,6 +92,11 @@ func main() {
 			Value:  "00000000",
 		},
 		cli.StringFlag{
+			Name:   "commit.link",
+			Usage:  "git commit link",
+			EnvVar: "DRONE_COMMIT_LINK",
+		},
+		cli.StringFlag{
 			Name:   "commit.ref",
 			Value:  "refs/heads/master",
 			Usage:  "git commit ref",
@@ -124,6 +139,12 @@ func main() {
 			Usage:  "build status",
 			Value:  "success",
 			EnvVar: "DRONE_BUILD_STATUS",
+		},
+		cli.StringFlag{
+			Name:   "build.prevstatus",
+			Usage:  "build previous status",
+			Value:  "success",
+			EnvVar: "DRONE_PREV_BUILD_STATUS",
 		},
 		cli.StringFlag{
 			Name:   "build.link",
@@ -169,25 +190,29 @@ func run(c *cli.Context) error {
 			Name:  c.String("repo.name"),
 		},
 		Build: Build{
-			Tag:      c.String("build.tag"),
-			Number:   c.Int("build.number"),
-			Event:    c.String("build.event"),
-			Status:   c.String("build.status"),
-			Commit:   c.String("commit.sha"),
-			Ref:      c.String("commit.ref"),
-			Branch:   c.String("commit.branch"),
-			Author:   c.String("commit.author"),
-			Pull:     c.String("commit.pull"),
-			Message:  c.String("commit.message"),
-			DeployTo: c.String("build.deployTo"),
-			Link:     c.String("build.link"),
-			Started:  c.Int64("build.started"),
-			Created:  c.Int64("build.created"),
+			Tag:        c.String("build.tag"),
+			Number:     c.Int("build.number"),
+			Event:      c.String("build.event"),
+			Status:     c.String("build.status"),
+			PrevStatus: c.String("build.prevstatus"),
+			Commit:     c.String("commit.sha"),
+			CommitLink: c.String("commit.link"),
+			Ref:        c.String("commit.ref"),
+			Branch:     c.String("commit.branch"),
+			Author:     c.String("commit.author"),
+			Pull:       c.String("commit.pull"),
+			Message:    c.String("commit.message"),
+			DeployTo:   c.String("build.deployTo"),
+			Link:       c.String("build.link"),
+			Started:    c.Int64("build.started"),
+			Created:    c.Int64("build.created"),
 		},
 		Job: Job{
 			Started: c.Int64("job.started"),
 		},
 		Config: Config{
+			GhToken:   c.String("ghtoken"),
+      GhToSlackJSON: c.String("ghtoslacks"),
 			Webhook:   c.String("webhook"),
 			Channel:   c.String("channel"),
 			Recipient: c.String("recipient"),

@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
-	"github.com/bluele/slack"
 	"github.com/drone/drone-template-lib/template"
+	"github.com/google/go-github/github"
+	"github.com/wraithgar/slack"
+	"golang.org/x/oauth2"
 )
 
 type (
@@ -15,20 +20,22 @@ type (
 	}
 
 	Build struct {
-		Tag      string
-		Event    string
-		Number   int
-		Commit   string
-		Ref      string
-		Branch   string
-		Author   string
-		Pull     string
-		Message  string
-		DeployTo string
-		Status   string
-		Link     string
-		Started  int64
-		Created  int64
+		Tag        string
+		Event      string
+		Number     int
+		Commit     string
+		CommitLink string
+		Ref        string
+		Branch     string
+		Author     string
+		Pull       string
+		Message    string
+		DeployTo   string
+		Status     string
+		PrevStatus     string
+		Link       string
+		Started    int64
+		Created    int64
 	}
 
 	Config struct {
@@ -40,7 +47,9 @@ type (
 		ImageURL  string
 		IconURL   string
 		IconEmoji string
-		LinkNames bool
+		LinkNames  bool
+		GhToken    string
+    GhToSlackJSON string
 	}
 
 	Job struct {
@@ -53,9 +62,21 @@ type (
 		Config Config
 		Job    Job
 	}
+
+	//Custom payload object from andbang deploy event
+	DeploymentPayload struct {
+		ResponseURL string `json:"response_url,omitempty"`
+		Person      string `json:"person,omitempty"`
+	}
+
+  GhToSlack struct {
+    Github string `json:"github"`
+    Slack string `json:"slack"`
+  }
 )
 
 func (p Plugin) Exec() error {
+	fmt.Printf("andyet custom drone-slack version %s build %s\n", version, build)
 	attachment := slack.Attachment{
 		Text:       message(p.Repo, p.Build),
 		Fallback:   fallback(p.Repo, p.Build),
@@ -64,20 +85,6 @@ func (p Plugin) Exec() error {
 		ImageURL:   p.Config.ImageURL,
 	}
 
-	payload := slack.WebHookPostPayload{}
-	payload.Username = p.Config.Username
-	payload.Attachments = []*slack.Attachment{&attachment}
-	payload.IconUrl = p.Config.IconURL
-	payload.IconEmoji = p.Config.IconEmoji
-
-	if p.Config.Recipient != "" {
-		payload.Channel = prepend("@", p.Config.Recipient)
-	} else if p.Config.Channel != "" {
-		payload.Channel = prepend("#", p.Config.Channel)
-	}
-	if p.Config.LinkNames == true {
-		payload.LinkNames = "1"
-	}
 	if p.Config.Template != "" {
 		txt, err := template.RenderTrim(p.Config.Template, p)
 
@@ -88,8 +95,66 @@ func (p Plugin) Exec() error {
 		attachment.Text = txt
 	}
 
-	client := slack.NewWebHook(p.Config.Webhook)
-	return client.PostMessage(&payload)
+	fmt.Printf("Build event: %s\n", p.Build.Event)
+	if p.Build.Event == "deployment" {
+		//Send a delayed response if we have a response url
+		deployPayload, err := getDeploymentPayload(p.Config, p.Repo, p.Build)
+		if err != nil {
+      return err
+    }
+    response := slack.ResponsePayload{}
+    response.Attachments = []*slack.Attachment{&attachment}
+    if p.Config.LinkNames == true {
+      response.LinkNames = "1"
+    }
+    fmt.Println("sending delayed response")
+    delayedClient := slack.NewDelayedResponse(deployPayload.ResponseURL)
+    return delayedClient.PostDelayedResponse(&response)
+	}
+
+	//Send a webhook message
+	payload := slack.WebHookPostPayload{}
+	payload.Username = p.Config.Username
+	payload.Attachments = []*slack.Attachment{&attachment}
+	payload.IconUrl = p.Config.IconURL
+	payload.IconEmoji = p.Config.IconEmoji
+	payload.Attachments = []*slack.Attachment{&attachment}
+
+  //These are the only cases we care about
+  if p.Build.Event == "tag" || p.Build.Status == "failure" || p.Build.PrevStatus == "failure" {
+    if p.Config.GhToSlackJSON != "" {
+      var ghtoslacks []GhToSlack
+      jsonerr := json.Unmarshal([]byte(p.Config.GhToSlackJSON), &ghtoslacks)
+      if jsonerr != nil {
+        fmt.Println(jsonerr)
+      } else {
+        for _, v := range ghtoslacks {
+          if (v.Github == p.Build.Author) {
+            payload.Channel = prepend("@", v.Slack)
+          }
+        }
+      }
+    }
+
+    if payload.Channel == "" {
+      if p.Config.Recipient != "" {
+        payload.Channel = prepend("@", p.Config.Recipient)
+      } else if p.Config.Channel != "" {
+        payload.Channel = prepend("#", p.Config.Channel)
+      }
+    }
+
+    if p.Config.LinkNames == true {
+      payload.LinkNames = "1"
+    }
+
+    fmt.Printf("sending webhook message to %s\n", payload.Channel)
+    client := slack.NewWebHook(p.Config.Webhook)
+    return client.PostMessage(&payload)
+  }
+  fmt.Println("Not sending this one to slack")
+  fmt.Println(attachment.Text)
+  return nil
 }
 
 func message(repo Repo, build Build) string {
@@ -132,4 +197,29 @@ func prepend(prefix, s string) string {
 	}
 
 	return s
+}
+
+func getDeploymentPayload(config Config, repo Repo, build Build) (DeploymentPayload, error) {
+	var payload DeploymentPayload
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: config.GhToken},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
+	parts := strings.Split(build.CommitLink, "/")
+	owner := parts[4]
+	name := parts[5]
+	id, _ := strconv.ParseInt(parts[7], 10, 64)
+	deployment, _, gherr := client.Repositories.GetDeployment(ctx, owner, name, id)
+	if gherr != nil {
+		fmt.Println(gherr)
+		return payload, gherr
+	}
+	jsonerr := json.Unmarshal(deployment.Payload, &payload)
+	if jsonerr != nil {
+		fmt.Println(jsonerr)
+		return payload, jsonerr
+	}
+	return payload, nil
 }

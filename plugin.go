@@ -122,33 +122,33 @@ func (p Plugin) Exec() error {
 
 	//These are the only cases we care about
 	if p.Build.Event == "tag" || p.Build.Status == "failure" || p.Build.PrevStatus == "failure" {
-    if p.Config.GhToSlackJSON != "" {
-      var ghtoslacks []GhToSlack
-      jsonerr := json.Unmarshal([]byte(p.Config.GhToSlackJSON), &ghtoslacks)
-      if jsonerr != nil {
-        fmt.Println(jsonerr)
-      } else {
-        for _, v := range ghtoslacks {
-          if v.Github == p.Build.Author {
-            payload.Channel = prepend("@", v.Slack)
-          }
-        }
-      }
-    } else {
-      fmt.Println("GhToSlackJSON not found")
-    }
+		if p.Config.GhToSlackJSON != "" {
+			var ghtoslacks []GhToSlack
+			jsonerr := json.Unmarshal([]byte(p.Config.GhToSlackJSON), &ghtoslacks)
+			if jsonerr != nil {
+				fmt.Println(jsonerr)
+			} else {
+				for _, v := range ghtoslacks {
+					if v.Github == p.Build.Author {
+						payload.Channel = prepend("@", v.Slack)
+					}
+				}
+			}
+		} else {
+			fmt.Println("GhToSlackJSON not found")
+		}
 
-    if payload.Channel == "" {
-      if p.Config.Recipient != "" {
-        payload.Channel = prepend("@", p.Config.Recipient)
-      } else if p.Config.Channel != "" {
-        payload.Channel = prepend("#", p.Config.Channel)
-      }
-    }
+		if payload.Channel == "" {
+			if p.Config.Recipient != "" {
+				payload.Channel = prepend("@", p.Config.Recipient)
+			} else if p.Config.Channel != "" {
+				payload.Channel = prepend("#", p.Config.Channel)
+			}
+		}
 
-    if p.Config.LinkNames == true {
-      payload.LinkNames = "1"
-    }
+		if p.Config.LinkNames == true {
+			payload.LinkNames = "1"
+		}
 
 		fmt.Printf("sending webhook message to %s\n", payload.Channel)
 		client := slack.NewWebHook(p.Config.Webhook)

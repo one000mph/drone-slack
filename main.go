@@ -10,7 +10,7 @@ import (
 
 var (
 	version = "2.1.0"
-	build   = "1"
+	build   = "5"
 )
 
 func main() {

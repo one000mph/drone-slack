@@ -4,7 +4,7 @@ Drone plugin for sending Slack notifications. For the usage information and a li
 
 ## NOTE:
 
-This is a fork of the original project, customized for our andyet deploy
+This is a fork of the original project, customized for Talky Inc. deploy
 pipeline.
 
 

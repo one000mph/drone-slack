@@ -76,7 +76,7 @@ type (
 )
 
 func (p Plugin) Exec() error {
-	fmt.Printf("andyet custom drone-slack version %s build %s\n", version, build)
+	fmt.Printf("talky custom drone-slack version %s build %s\n", version, build)
 	attachment := slack.Attachment{
 		Text:       message(p.Repo, p.Build),
 		Fallback:   fallback(p.Repo, p.Build),

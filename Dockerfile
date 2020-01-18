@@ -1,6 +1,6 @@
 FROM plugins/base:multiarch
 
-LABEL maintainer="Andyet OPS <ops@andyet.com>" \
+LABEL maintainer="Talky OPS <ops@talky.io>" \
   org.label-schema.name="Drone Slack" \
   org.label-schema.schema-version="2.1.0"
 

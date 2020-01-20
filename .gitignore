@@ -29,3 +29,4 @@ vendor/
 coverage.out
 drone-slack
 run.sh
+ghtoslack.json

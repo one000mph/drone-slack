@@ -23,17 +23,17 @@ func main() {
 		&cli.StringFlag{
 			Name:    "webhook",
 			Usage:   "slack webhook url",
-			EnvVars: []string{"SLACK_WEBHOOK,PLUGIN_WEBHOOK"},
+			EnvVars: []string{"SLACK_WEBHOOK,PLUGIN_SLACK_WEBHOOK,"},
 		},
 		&cli.StringFlag{
 			Name:    "ghtoken",
 			Usage:   "github access token",
-			EnvVars: []string{"GITHUB_ACCESS_TOKEN"},
+			EnvVars: []string{"GITHUB_ACCESS_TOKEN,PLUGIN_GITHUB_ACCESS_TOKEN"},
 		},
 		&cli.StringFlag{
 			Name:    "ghtoslacks",
 			Usage:   "github_slack_lookup",
-			EnvVars: []string{"GITHUB_SLACK_LOOKUP"},
+			EnvVars: []string{"GITHUB_SLACK_LOOKUP,PLUGIN_GITHUB_SLACK_LOOKUP"},
 		},
 		&cli.StringFlag{
 			Name:    "channel",

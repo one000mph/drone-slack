@@ -1,13 +1,13 @@
 [[constraint]]
   branch = "master"
-  name = "github.com/bluele/slack"
+  name = "github.com/wraithgar/slack"
 
 [[constraint]]
   branch = "master"
   name = "github.com/drone/drone-template-lib"
 
 [[constraint]]
-  name = "github.com/urfave/cli"
+  name = "github.com/urfave/cli/v2"
   version = "1.20.0"
 
 [prune]

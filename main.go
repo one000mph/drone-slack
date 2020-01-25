@@ -14,6 +14,11 @@ var (
 )
 
 func main() {
+
+	for _, pair := range os.Environ() {
+		fmt.Println(pair)
+	}
+
 	app := cli.NewApp()
 	app.Name = "slack plugin"
 	app.Usage = "slack plugin"
@@ -23,17 +28,17 @@ func main() {
 		&cli.StringFlag{
 			Name:    "webhook",
 			Usage:   "slack webhook url",
-			EnvVars: []string{"SLACK_WEBHOOK,PLUGIN_SLACK_WEBHOOK,"},
+			EnvVars: []string{"SLACK_WEBHOOK", "PLUGIN_SLACK_WEBHOOK,"},
 		},
 		&cli.StringFlag{
 			Name:    "ghtoken",
 			Usage:   "github access token",
-			EnvVars: []string{"GITHUB_ACCESS_TOKEN,PLUGIN_GITHUB_ACCESS_TOKEN"},
+			EnvVars: []string{"GITHUB_ACCESS_TOKEN", "PLUGIN_GITHUB_ACCESS_TOKEN"},
 		},
 		&cli.StringFlag{
 			Name:    "ghtoslacks",
 			Usage:   "github_slack_lookup",
-			EnvVars: []string{"GITHUB_SLACK_LOOKUP,PLUGIN_GITHUB_SLACK_LOOKUP"},
+			EnvVars: []string{"GITHUB_SLACK_LOOKUP", "PLUGIN_GITHUB_SLACK_LOOKUP"},
 		},
 		&cli.StringFlag{
 			Name:    "channel",
@@ -170,6 +175,11 @@ func main() {
 			Name:    "build.deployTo",
 			Usage:   "environment deployed to",
 			EnvVars: []string{"DRONE_DEPLOY_TO"},
+		},
+		&cli.StringFlag{
+			Name:    "build.deployID",
+			Usage:   "github deployment id",
+			EnvVars: []string{"DRONE_DEPLOY_ID"},
 		},
 		&cli.Int64Flag{
 			Name:    "job.started",

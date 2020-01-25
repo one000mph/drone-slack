@@ -1,16 +1,12 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/drone/drone-template-lib/template"
-	"github.com/google/go-github/github"
 	"github.com/wraithgar/slack"
-	"golang.org/x/oauth2"
 )
 
 type (
@@ -96,9 +92,10 @@ func (p Plugin) Exec() error {
 	}
 
 	fmt.Printf("Build event: %s\n", p.Build.Event)
-	if p.Build.Event == "deployment" {
+	if p.Build.Event == "promote" {
 		//Send a delayed response if we have a response url
 		deployPayload, err := getDeploymentPayload(p.Config, p.Repo, p.Build)
+		fmt.Println(deployPayload)
 		if err != nil {
 			return err
 		}
@@ -107,9 +104,10 @@ func (p Plugin) Exec() error {
 		if p.Config.LinkNames == true {
 			response.LinkNames = "1"
 		}
-		fmt.Println("sending delayed response")
-		delayedClient := slack.NewDelayedResponse(deployPayload.ResponseURL)
-		return delayedClient.PostDelayedResponse(&response)
+		fmt.Println("pretending to send delayed response")
+		return err
+		// delayedClient := slack.NewDelayedResponse(deployPayload.ResponseURL)
+		// return delayedClient.PostDelayedResponse(&response)
 	}
 
 	//Send a webhook message
@@ -204,25 +202,26 @@ func prepend(prefix, s string) string {
 
 func getDeploymentPayload(config Config, repo Repo, build Build) (DeploymentPayload, error) {
 	var payload DeploymentPayload
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: config.GhToken},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
-	parts := strings.Split(build.CommitLink, "/")
-	owner := parts[4]
-	name := parts[5]
-	id, _ := strconv.ParseInt(parts[7], 10, 64)
-	deployment, _, gherr := client.Repositories.GetDeployment(ctx, owner, name, id)
-	if gherr != nil {
-		fmt.Println(gherr)
-		return payload, gherr
-	}
-	jsonerr := json.Unmarshal(deployment.Payload, &payload)
-	if jsonerr != nil {
-		fmt.Println(jsonerr)
-		return payload, jsonerr
-	}
+	// ctx := context.Background()
+	// ts := oauth2.StaticTokenSource(
+	// &oauth2.Token{AccessToken: config.GhToken},
+	// )
+	// tc := oauth2.NewClient(ctx, ts)
+	// client := github.NewClient(tc)
+	parts := strings.Split(build.Link, "/")
+	owner := parts[3]
+	name := parts[4]
+	fmt.Println("OWNER, NAME", owner, name)
+	// id, _ := strconv.ParseInt(parts[7], 10, 64)
+	// deployment, _, gherr := client.Repositories.GetDeployment(ctx, owner, name, id)
+	// if gherr != nil {
+	// 	fmt.Println(gherr)
+	// 	return payload, gherr
+	// }
+	// jsonerr := json.Unmarshal(deployment.Payload, &payload)
+	// if jsonerr != nil {
+	// 	fmt.Println(jsonerr)
+	// 	return payload, jsonerr
+	// }
 	return payload, nil
 }

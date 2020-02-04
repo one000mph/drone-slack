@@ -15,10 +15,6 @@ var (
 
 func main() {
 
-	for _, pair := range os.Environ() {
-		fmt.Println(pair)
-	}
-
 	app := cli.NewApp()
 	app.Name = "slack plugin"
 	app.Usage = "slack plugin"
@@ -213,6 +209,7 @@ func run(c *cli.Context) error {
 			Pull:       c.String("commit.pull"),
 			Message:    c.String("commit.message"),
 			DeployTo:   c.String("build.deployTo"),
+			DeployID:   c.Int64("build.deployID"),
 			Link:       c.String("build.link"),
 			Started:    c.Int64("build.started"),
 			Created:    c.Int64("build.created"),

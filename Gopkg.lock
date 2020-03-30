@@ -14,7 +14,7 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/bluele/slack"
+  name = "github.com/wraithgar/slack"
   packages = ["."]
   revision = "7f3862e374f157ad3f23c3092fa23b744d87c68d"
 
@@ -31,7 +31,7 @@
   version = "v0.8.0"
 
 [[projects]]
-  name = "github.com/urfave/cli"
+  name = "github.com/urfave/cli/v2"
   packages = ["."]
   revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
   version = "v1.20.0"

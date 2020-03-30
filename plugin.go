@@ -108,7 +108,7 @@ func (p Plugin) Exec() error {
 		if p.Config.LinkNames == true {
 			response.LinkNames = "1"
 		}
-		fmt.Printf("%+v\n", response)
+		fmt.Printf("%+v\n", response.Attachments)
 		// return err
 		delayedClient := slack.NewDelayedResponse(deployPayload.ResponseURL)
 		return delayedClient.PostDelayedResponse(&response)
@@ -133,6 +133,7 @@ func (p Plugin) Exec() error {
 				for _, v := range ghtoslacks {
 					if v.Github == p.Build.Author {
 						payload.Channel = prepend("@", v.Slack)
+						fmt.Printf("%s", payload.Channel)
 					}
 				}
 			}
@@ -142,6 +143,7 @@ func (p Plugin) Exec() error {
 
 		if payload.Channel == "" {
 			if p.Config.Recipient != "" {
+				fmt.Printf("%s", p.Config.Recipient)
 				payload.Channel = prepend("@", p.Config.Recipient)
 			} else if p.Config.Channel != "" {
 				payload.Channel = prepend("#", p.Config.Channel)
